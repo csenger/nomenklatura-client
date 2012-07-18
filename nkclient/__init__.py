@@ -6,38 +6,38 @@ def apply_attrs(obj, data):
         setattr(obj, k, v)
 
 
-class LSException(Exception):
+class NKException(Exception):
 
     def __init__(self, data):
         apply_attrs(self, data)
 
 
-class LSNoMatch(LSException):
+class NKNoMatch(NKException):
 
     def __repr__(self):
-        return "<LSNoMatch(%s:%s)>" % (self.dataset,
+        return "<NKNoMatch(%s:%s)>" % (self.dataset,
                                        self.key)
 
 
-class LSInvalid(LSException):
+class NKInvalid(NKException):
 
     def __repr__(self):
-        return "<LSInvalid(%s:%s)>" % (self.dataset,
+        return "<NKInvalid(%s:%s)>" % (self.dataset,
                                        self.key)
 
 
-class LSValue(object):
+class NKValue(object):
 
     def __init__(self, dataset, data):
         self._dataset = dataset
         apply_attrs(self, data)
 
     def __repr__(self):
-        return "<LSValue(%s:%s:%s)>" % (self._dataset.name,
+        return "<NKValue(%s:%s:%s)>" % (self._dataset.name,
                                         self.id, self.value)
 
 
-class LSLink(object):
+class NKLink(object):
 
     INVALID = "INVALID"
     NEW = "NEW"
@@ -47,14 +47,14 @@ class LSLink(object):
         apply_attrs(self, data)
 
     def __repr__(self):
-        return "<LSLink(%s:%s:%s:%s)>" % (self._dataset.name,
+        return "<NKLink(%s:%s:%s:%s)>" % (self._dataset.name,
                                        self.id, self.key, self.is_matched)
 
 
-class LSDataset(object):
+class NKDataset(object):
 
     def __init__(self, dataset, 
-            host='http://linker.pudo.org',
+            host='http://nomenklatura.okfnlabs.org',
             api_key=None):
         self.host = host
         self.name = dataset
@@ -95,24 +95,24 @@ class LSDataset(object):
         else:
             code, val = self._get('/value', params={'value': value})
         if code != 200:
-            raise LSException(val or {})
-        return LSValue(self, val)
+            raise NKException(val or {})
+        return NKValue(self, val)
 
     def add_value(self, value, context={}):
         code, val = self._post('/values', data={'value': value})
         if code == 400:
-            raise LSException(val)
-        return LSValue(self, val)
+            raise NKException(val)
+        return NKValue(self, val)
 
     def ensure_value(self, value):
         try:
             return self.get_value(value=value)
-        except LSException, ex:
+        except NKException, ex:
             return self.add_value(value=value)
 
     def values(self):
         code, vals = self._get('/values')
-        return [LSValue(self, v) for v in vals]
+        return [NKValue(self, v) for v in vals]
 
     def get_link(self, id=None, key=None):
         assert id or value, "Need to give an ID or a ket!"
@@ -121,36 +121,36 @@ class LSDataset(object):
         else:
             code, val = self._get('/link', params={'key': value})
         if code != 200:
-            raise LSException(val)
-        return LSLink(self, val)
+            raise NKException(val)
+        return NKLink(self, val)
 
     def links(self):
         code, vals = self._get('/links')
-        return [LSLink(self, v) for v in vals]
+        return [NKLink(self, v) for v in vals]
 
     def lookup(self, key, context={}, readonly=False):
         code, val = self._post('/lookup', 
                 data={'key': key,
                       'readonly': readonly})
         if code == 404:
-            raise LSNoMatch(val)
+            raise NKNoMatch(val)
         elif code == 418:
-            raise LSInvalid(val)
+            raise NKInvalid(val)
         else:
-            return LSValue(self, val.get('value'))
+            return NKValue(self, val.get('value'))
 
     def match(self, link_id, value_id):
         code, val = self._post('/links/%s/match' % link_id, 
                         data={'choice': value_id,
                               'value': ''})
         if code != 200:
-            raise LSException(val)
+            raise NKException(val)
         return None
 
     def __repr__(self):
-        return "<LSDataset(%s)" % self.name
+        return "<NKDataset(%s)" % self.name
 
 
 if __name__ == "__main__":
-    ds = LSDataset('offenesparlament', 'http://localhost:5000')
+    ds = NKDataset('offenesparlament', 'http://localhost:5000')
 

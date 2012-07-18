@@ -1,9 +1,9 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='lsclient',
+    name='nkclient',
     version='0.1',
-    description="Client library for linkspotting, make record linkages on the web.",
+    description="Client library for nomenklatura, make record linkages on the web.",
     long_description='',
     classifiers=[
         ],
