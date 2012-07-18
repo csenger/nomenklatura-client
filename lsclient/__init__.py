@@ -37,12 +37,28 @@ class LSValue(object):
                                         self.id, self.value)
 
 
+class LSLink(object):
+
+    INVALID = "INVALID"
+    NEW = "NEW"
+
+    def __init__(self, dataset, data):
+        self._dataset = dataset
+        apply_attrs(self, data)
+
+    def __repr__(self):
+        return "<LSLink(%s:%s:%s:%s)>" % (self._dataset.name,
+                                       self.id, self.key, self.is_matched)
+
+
 class LSDataset(object):
 
     def __init__(self, dataset, 
-            host='http://linker.pudo.org'):
+            host='http://linker.pudo.org',
+            api_key=None):
         self.host = host
         self.name = dataset
+        self.api_key = api_key
         self._fetch()
 
     @property
@@ -50,6 +66,8 @@ class LSDataset(object):
         if not hasattr(self, '_session_obj'):
             headers = {'Accept': 'application/json',
                        'Content-Type': 'application/json'}
+            if self.api_key is not None:
+                headers['Authorization'] = self.api_key
             self._session_obj = requests.session(headers=headers)
         return self._session_obj
 
@@ -67,6 +85,7 @@ class LSDataset(object):
 
     def _fetch(self):
         code, data = self._get('')
+        print code, data
         apply_attrs(self, data)
 
     def get_value(self, id=None, value=None):
@@ -76,7 +95,7 @@ class LSDataset(object):
         else:
             code, val = self._get('/value', params={'value': value})
         if code != 200:
-            raise LSException(val)
+            raise LSException(val or {})
         return LSValue(self, val)
 
     def add_value(self, value, context={}):
@@ -84,6 +103,30 @@ class LSDataset(object):
         if code == 400:
             raise LSException(val)
         return LSValue(self, val)
+
+    def ensure_value(self, value):
+        try:
+            return self.get_value(value=value)
+        except LSException, ex:
+            return self.add_value(value=value)
+
+    def values(self):
+        code, vals = self._get('/values')
+        return [LSValue(self, v) for v in vals]
+
+    def get_link(self, id=None, key=None):
+        assert id or value, "Need to give an ID or a ket!"
+        if id is not None:
+            code, val = self._get('/links/%s' % id)
+        else:
+            code, val = self._get('/link', params={'key': value})
+        if code != 200:
+            raise LSException(val)
+        return LSLink(self, val)
+
+    def links(self):
+        code, vals = self._get('/links')
+        return [LSLink(self, v) for v in vals]
 
     def lookup(self, key, context={}, readonly=False):
         code, val = self._post('/lookup', 
@@ -96,9 +139,13 @@ class LSDataset(object):
         else:
             return LSValue(self, val.get('value'))
 
-    def values(self):
-        code, vals = self._get('/values')
-        return [LSValue(self, v) for v in vals]
+    def match(self, link_id, value_id):
+        code, val = self._post('/links/%s/match' % link_id, 
+                        data={'choice': value_id,
+                              'value': ''})
+        if code != 200:
+            raise LSException(val)
+        return None
 
     def __repr__(self):
         return "<LSDataset(%s)" % self.name
