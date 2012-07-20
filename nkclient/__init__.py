@@ -1,5 +1,6 @@
 import requests
 import json
+import time
 
 def apply_attrs(obj, data):
     for k, v in data.items():
@@ -71,21 +72,21 @@ class NKDataset(object):
             self._session_obj = requests.session(headers=headers)
         return self._session_obj
 
-    def _get(self, path, params={}):
+    def _get(self, path, params={}, retry=True):
         response = self._session.get(self.host + '/' + self.name + path,
                 params=params)
         return response.status_code, response.json
 
-    def _post(self, path, data={}):
+    def _post(self, path, data={}, retry=True):
         data = json.dumps(data)
         response = self._session.post(self.host + '/' + self.name + path,
                 allow_redirects=True,
                 data=data)
-        return response.status_code, json.loads(response.content)
+        return response.status_code, json.loads(response.content) \
+            if response.content else {}
 
     def _fetch(self):
         code, data = self._get('')
-        print code, data
         apply_attrs(self, data)
 
     def get_value(self, id=None, value=None):
@@ -98,17 +99,18 @@ class NKDataset(object):
             raise NKException(val or {})
         return NKValue(self, val)
 
-    def add_value(self, value, context={}):
-        code, val = self._post('/values', data={'value': value})
+    def add_value(self, value, data={}):
+        code, val = self._post('/values', 
+                data={'value': value, 'data': data})
         if code == 400:
             raise NKException(val)
         return NKValue(self, val)
 
-    def ensure_value(self, value):
+    def ensure_value(self, value, data={}):
         try:
             return self.get_value(value=value)
         except NKException, ex:
-            return self.add_value(value=value)
+            return self.add_value(value=value, data=data)
 
     def values(self):
         code, vals = self._get('/values')
