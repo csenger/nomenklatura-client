@@ -1,6 +1,6 @@
 import requests
 import json
-import time
+
 
 def apply_attrs(obj, data):
     for k, v in data.items():
@@ -11,6 +11,13 @@ class NKException(Exception):
 
     def __init__(self, data):
         apply_attrs(self, data)
+
+
+class NKDatasetException(NKException):
+
+    def __repr__(self):
+        return "<NKDatasetException(%s:%s)" % (self,
+                                               getattr(self, 'message', None))
 
 
 class NKNoMatch(NKException):
@@ -54,9 +61,9 @@ class NKLink(object):
 
 class NKDataset(object):
 
-    def __init__(self, dataset, 
-            host='http://nomenklatura.okfnlabs.org',
-            api_key=None):
+    def __init__(self, dataset,
+                 host='http://nomenklatura.okfnlabs.org',
+                 api_key=None):
         self.host = host
         self.name = dataset
         self.api_key = api_key
@@ -87,6 +94,9 @@ class NKDataset(object):
 
     def _fetch(self):
         code, data = self._get('')
+        if code != 200 or data is None:
+            data = data if data is not None else {'code': code}
+            raise NKDatasetException(data)
         apply_attrs(self, data)
 
     def get_value(self, id=None, value=None):
