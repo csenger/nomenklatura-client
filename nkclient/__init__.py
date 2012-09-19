@@ -82,6 +82,9 @@ class NKDataset(object):
     def _get(self, path, params={}, retry=True):
         response = self._session.get(self.host + '/' + self.name + path,
                 params=params)
+        if not response.ok:
+            #print [response.status_code, response.content]
+            del self._session_obj
         return response.status_code, response.json
 
     def _post(self, path, data={}, retry=True):
@@ -89,6 +92,9 @@ class NKDataset(object):
         response = self._session.post(self.host + '/' + self.name + path,
                 allow_redirects=True,
                 data=data)
+        if not response.ok:
+            #print [response.status_code, response.content]
+            del self._session_obj
         return response.status_code, json.loads(response.content) \
             if response.content else {}
 
