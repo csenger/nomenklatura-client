@@ -133,11 +133,11 @@ class NKDataset(object):
         return [NKValue(self, v) for v in vals]
 
     def get_link(self, id=None, key=None):
-        assert id or value, "Need to give an ID or a ket!"
+        assert id or key, "Need to give an ID or a key!"
         if id is not None:
             code, val = self._get('/links/%s' % id)
         else:
-            code, val = self._get('/link', params={'key': value})
+            code, val = self._get('/link', params={'key': key})
         if code != 200:
             raise NKException(val)
         return NKLink(self, val)
