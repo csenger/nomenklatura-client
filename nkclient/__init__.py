@@ -16,7 +16,7 @@ class NKException(Exception):
 class NKDatasetException(NKException):
 
     def __repr__(self):
-        return "<NKDatasetException(%s:%s)" % (self,
+        return "<NKDatasetException(%s:%s)>" % (self,
                                                getattr(self, 'message', None))
 
 
@@ -166,7 +166,7 @@ class NKDataset(object):
         return None
 
     def __repr__(self):
-        return "<NKDataset(%s)" % self.name
+        return "<NKDataset(%s)>" % self.name
 
 
 if __name__ == "__main__":
